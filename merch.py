@@ -6,6 +6,8 @@ import sys
 C_PLAIN = ['mp_order_items', 'mp_order_total']
 C_SERIALIZED = ['Content', 'mp_cart_items']
 
+GLOBAL_COUNT = {}
+
 # Single purchased item
 class Order:
     def __init__(self, name, price, quantity):
@@ -44,7 +46,7 @@ def getlast(group):
             if len(i.strip('"')) < 1:
                 return ""
             else:
-                return i
+                return i.strip()
 
 # Lazy PHP deserialize for mp_cart_items field
 def lazyd_cart(data):
@@ -71,6 +73,11 @@ def lazyd_cart(data):
 
         if cur_name and cur_price and cur_quantity:
             orders.append(Order(cur_name, cur_price, cur_quantity))
+            if cur_name not in GLOBAL_COUNT:
+                GLOBAL_COUNT[cur_name] = int(cur_quantity)
+            else:
+                GLOBAL_COUNT[cur_name] += int(cur_quantity)
+
             cur_name = None
             cur_price = None
             cur_quantity = None
@@ -138,6 +145,11 @@ def main():
     with open(output_file, 'w') as fout:
         for o in orders:
             fout.write("{}\n".format(o.to_csv()))
+            
+        fout.write("\nTotal Counts\n")
+        sorted_by_value = sorted(GLOBAL_COUNT.items(), key=lambda x: x[0])
+        for k,v in sorted_by_value:
+            fout.write("{},{}\n".format(k,v))
 
 
 if __name__ == '__main__':
