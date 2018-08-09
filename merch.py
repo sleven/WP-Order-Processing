@@ -3,10 +3,12 @@ import pprint
 import re
 import sys
 
+GLOBAL_COUNT = {}
 C_PLAIN = ['mp_order_items', 'mp_order_total']
 C_SERIALIZED = ['Content', 'mp_cart_items']
+CSV_COLUMNS = ['First Name', 'Last Name', 'Email', 'Address', 'Address 2', 'City', 'State', 'Zip', 'Country', 'Phone', '# of Items', 'Total', 'Items']
 
-GLOBAL_COUNT = {}
+
 
 # Single purchased item
 class Order:
@@ -20,6 +22,7 @@ class Order:
 
     def __repr__(self):
         return str(self.__dict__)
+
 
 # Single customer merch order
 class MerchOrder:
@@ -39,6 +42,7 @@ class MerchOrder:
                 ret.append(v)
         return ', '.join(ret)
 
+
 # Retrieve last member in regex group
 def getlast(group):
     for i in reversed(group):
@@ -47,6 +51,7 @@ def getlast(group):
                 return ""
             else:
                 return i.strip()
+
 
 # Lazy PHP deserialize for mp_cart_items field
 def lazyd_cart(data):
@@ -65,7 +70,7 @@ def lazyd_cart(data):
         value = getlast(groups[i + 1])
 
         if item.lower() == 'name':
-            cur_name = value
+            cur_name = value.replace('&#8217;', '\'')
         elif item.lower() == 'price':
             cur_price = value
         elif item.lower() == 'quantity':
@@ -84,6 +89,7 @@ def lazyd_cart(data):
 
     return orders
 
+
 # Lazy PHP deserialize for Content field
 def lazyd(data):
     ddict = {}
@@ -99,6 +105,7 @@ def lazyd(data):
         ddict[getlast(groups[i])] = getlast(groups[i + 1])
 
     return ddict
+
 
 # Do it
 def process_orders(wp_file):
@@ -143,9 +150,11 @@ def main():
     orders = process_orders(wp_file)
 
     with open(output_file, 'w') as fout:
+        fout.write(','.join(CSV_COLUMNS))
+        fout.write('\n')
         for o in orders:
             fout.write("{}\n".format(o.to_csv()))
-            
+
         fout.write("\nTotal Counts\n")
         sorted_by_value = sorted(GLOBAL_COUNT.items(), key=lambda x: x[0])
         for k,v in sorted_by_value:
