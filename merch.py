@@ -6,7 +6,7 @@ import sys
 C_PLAIN = ['mp_order_items', 'mp_order_total']
 C_SERIALIZED = ['Content', 'mp_cart_items']
 
-
+# Single purchased item
 class Order:
     def __init__(self, name, price, quantity):
         self.name = name
@@ -19,7 +19,7 @@ class Order:
     def __repr__(self):
         return str(self.__dict__)
 
-
+# Single customer merch order
 class MerchOrder:
     def set_orders(self, orders):
         self.orders = orders
@@ -37,7 +37,7 @@ class MerchOrder:
                 ret.append(v)
         return ', '.join(ret)
 
-
+# Retrieve last member in regex group
 def getlast(group):
     for i in reversed(group):
         if len(i) > 0:
@@ -46,7 +46,7 @@ def getlast(group):
             else:
                 return i
 
-
+# Lazy PHP deserialize for mp_cart_items field
 def lazyd_cart(data):
     orders = []
     groups = re.findall(r's:\d+:(\"\"([^\"]+)\"\"|\"\"\"\")|d:(\d+)|b:(\d+)|i:(\d+)', data)
@@ -77,7 +77,7 @@ def lazyd_cart(data):
 
     return orders
 
-
+# Lazy PHP deserialize for Content field
 def lazyd(data):
     ddict = {}
 
@@ -93,7 +93,7 @@ def lazyd(data):
 
     return ddict
 
-
+# Do it
 def process_orders(wp_file):
     columns = []
     start = True
@@ -110,7 +110,7 @@ def process_orders(wp_file):
             line = line.replace(', ', ' ')
             fields = line.split(',')
             new_order = MerchOrder()
-            
+
             for i in range(len(columns)):
                 if columns[i] in C_PLAIN:
                     new_order.set_attrs(**{columns[i].lower(): fields[i]})
