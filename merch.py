@@ -79,9 +79,11 @@ def lazyd_cart(data):
         if cur_name and cur_price and cur_quantity:
             orders.append(Order(cur_name, cur_price, cur_quantity))
             if cur_name not in GLOBAL_COUNT:
-                GLOBAL_COUNT[cur_name] = int(cur_quantity)
+                GLOBAL_COUNT[cur_name] = [int(cur_quantity), int(cur_price)]
             else:
-                GLOBAL_COUNT[cur_name] += int(cur_quantity)
+                new_quantity = GLOBAL_COUNT[cur_name][0] + int(cur_quantity)
+                new_price = new_quantity * int(cur_price)
+                GLOBAL_COUNT[cur_name] = [new_quantity, new_price]
 
             cur_name = None
             cur_price = None
@@ -141,24 +143,26 @@ def process_orders(wp_file):
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: {} [wordpress.csv] [output.csv]".format(sys.argv[0]))
+        print("Usage: {} [wordpress.csv] [merch_orders.csv] [merch_totals.cvs]".format(sys.argv[0]))
         exit(1)
 
     wp_file = sys.argv[1]
-    output_file = sys.argv[2]
+    output_file_orders = sys.argv[2]
+    output_file_totals = sys.argv[3]
 
     orders = process_orders(wp_file)
 
-    with open(output_file, 'w') as fout:
+    with open(output_file_orders, 'w') as fout:
         fout.write(','.join(CSV_COLUMNS))
         fout.write('\n')
         for o in orders:
             fout.write("{}\n".format(o.to_csv()))
 
-        fout.write("\nTotal Counts\n")
+    with open(output_file_totals, 'w') as fout:
+        fout.write("Total Counts\n")
         sorted_by_value = sorted(GLOBAL_COUNT.items(), key=lambda x: x[0])
         for k,v in sorted_by_value:
-            fout.write("{},{}\n".format(k,v))
+            fout.write("{},{},{}\n".format(k,v[0],v[1]))
 
 
 if __name__ == '__main__':
