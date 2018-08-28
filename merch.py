@@ -4,7 +4,7 @@ import re
 import sys
 
 GLOBAL_COUNT = {}
-PRECON_ORDERS = []
+INPUT_PRECON_ORDERS = []
 
 C_PLAIN = ['mp_order_items', 'mp_order_total']
 C_SERIALIZED = ['Content', 'mp_cart_items']
@@ -151,14 +151,24 @@ def process_orders(wp_file):
 
 
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: {} [wordpress.csv] [merch_orders.csv] [merch_totals.cvs] [pre_con.csv]".format(sys.argv[0]))
+    if len(sys.argv) < 4:
+        print("Usage: {} [wordpress.csv] [pre_con_input.csv] [merch_orders.csv] [merch_totals.cvs] [pre_con.csv]".format(sys.argv[0]))
         exit(1)
 
     wp_file = sys.argv[1]
-    output_file_orders = sys.argv[2]
-    output_file_totals = sys.argv[3]
-    output_file_precon = sys.argv[4]
+    input_precon_orders = sys.argv[2]
+    output_file_orders = sys.argv[3]
+    output_file_totals = sys.argv[4]
+    output_file_precon = sys.argv[5]
+
+    with open(input_precon_orders, 'r') as fin:
+        print("READING PRECON")
+        for line in fin.readlines():
+            line = line.strip().split(",")
+            if len(line) < 4:
+                continue
+            INPUT_PRECON_ORDERS.append([line[0], line[1], line[2], line[3]])
+
 
     orders = process_orders(wp_file)
 
@@ -179,7 +189,24 @@ def main():
         for o in orders:
             for l in o.orders:
                 if l.name.find('Pre-Con Ticket') > -1:
-                    fout.write("{},{},{}\n".format(o.first_name, o.last_name, l.quantity))
+                    precon_quantity_prior = 0
+                    for line in INPUT_PRECON_ORDERS:
+                        if o.first_name.lower() == line[0].lower() and o.last_name.lower() == line[1].lower():
+                           precon_quantity_prior = int(line[2])
+                           final_cell = line[3]
+                           print("MATCH")
+                           print("{} {}".format(line[0], line[1]))
+
+                    if precon_quantity_prior > 0:
+                        if precon_quantity_prior != int(l.quantity):
+                            print("FUCK")
+                            print(precon_quantity_prior)
+                            print(l.quantity)
+                            sys.exit(1)
+
+                        fout.write("{},{},{},{}\n".format(o.first_name, o.last_name, l.quantity, final_cell))
+                    else:
+                        fout.write("{},{},{}\n".format(o.first_name, o.last_name, l.quantity))
 
 if __name__ == '__main__':
     main()
